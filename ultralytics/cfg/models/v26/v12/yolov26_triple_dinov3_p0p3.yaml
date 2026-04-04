@@ -1,0 +1,68 @@
+# YOLOv26 🚀, AGPL-3.0 license
+# YOLOv26 Triple Input with Dual DINOv3 integration (P0 + P3)
+# CFG file for YOLOv26-triple with dual DINOv3 feature extraction at P0 and P3 stages
+
+# Parameters
+nc: 80 # number of classes  
+ch: 9  # input channels for triple input
+scales: # model compound scaling constants, i.e. 'model=yolov26n_triple_dinov3_p0p3.yaml' will call yolov26_triple_dinov3_p0p3.yaml with scale 'n'
+  # [depth, width, max_channels]
+  n: [0.50, 0.25, 1024] # summary: ~XXX layers, ~X,XXX,XXX parameters, ~X,XXX,XXX gradients, ~XX.X GFLOPs
+  s: [0.50, 0.50, 1024] # summary: ~XXX layers, ~X,XXX,XXX parameters, ~X,XXX,XXX gradients, ~XX.X GFLOPs
+  m: [0.50, 1.00, 512]  # summary: ~XXX layers, ~XX,XXX,XXX parameters, ~XX,XXX,XXX gradients, ~XXX.X GFLOPs
+  l: [1.00, 1.00, 512]  # summary: ~XXX layers, ~XX,XXX,XXX parameters, ~XX,XXX,XXX gradients, ~XXX.X GFLOPs
+  x: [1.00, 1.50, 512]  # summary: ~XXX layers, ~XX,XXX,XXX parameters, ~XX,XXX,XXX gradients, ~XXX.X GFLOPs
+
+# Dual DINOv3 configuration (P0 preprocessing + P3 enhancement)
+dinov3:
+  model_size: "small"        # DINOv3 model size: small, base, large, giant
+  freeze: true               # Freeze DINOv3 backbone during training
+  use_triple_branches: false # Use separate DINOv3 branches for each input
+  p0_preprocessing: true     # Enable P0 input preprocessing (handled in training script)
+  p0_output_channels: 64     # Output channels from P0 DINOv3 preprocessing
+  p3_enhancement: true       # Enable P3 feature enhancement (in backbone)
+  p3_output_channels: 128    # Output channels from P3 feature enhancer
+  image_size: 224           # Input image size for DINOv3
+  integration_points: ["p0", "p3"]  # P0 preprocessing + P3 backbone enhancement
+
+# YOLO12-triple backbone with Dual DINOv3 integration (P0 + P3)
+# P0 DINOv3 preprocessing will be handled in training script before backbone
+# This follows the reference repository pattern where P0 is input preprocessing
+backbone:
+  # [from, repeats, module, args]
+  
+  # Start backbone with regular Conv (input comes from P0 DINOv3 preprocessing)
+  # Input channels will be adjusted dynamically by training script based on P0 DINOv3 output
+  - [-1, 1, Conv,  [64, 3, 2]]             # 0-P1/2 (receives P0 DINOv3 preprocessed input)
+  - [-1, 2, C3k2,  [64, False, 0.25]]      # 1  
+  - [-1, 1, Conv,  [128, 3, 2]]            # 2-P2/4
+  - [-1, 2, C3k2,  [128, False, 0.25]]     # 3-P3 stage
+  
+  # P3 Feature Enhancement (using P3FeatureEnhancer like reference repo)
+  - [-1, 1, P3FeatureEnhancer, [128, 128]] # 4-P3 enhancement [input_channels, output_channels]
+  
+  # Continue with enhanced features
+  - [-1, 1, Conv,  [256, 3, 2]]            # 5-P4/16
+  - [-1, 4, A2C2f, [256, True, 4]]         # 6
+  - [-1, 1, Conv,  [512, 3, 2]]            # 7-P5/32
+  - [-1, 4, A2C2f, [512, True, 1]]         # 8
+
+# YOLO12-triple head (adjusted for corrected backbone indices)
+head:
+  - [-1, 1, nn.Upsample, [None, 2, "nearest"]]  # 9
+  - [[-1, 6], 1, Concat, [1]] # cat backbone P4        # 10
+  - [-1, 2, A2C2f, [256, False, -1]]                   # 11
+
+  - [-1, 1, nn.Upsample, [None, 2, "nearest"]]  # 12
+  - [[-1, 4], 1, Concat, [1]] # cat backbone P3 (P3FeatureEnhancer enhanced)  # 13
+  - [-1, 2, A2C2f, [128, False, -1]]                   # 14
+
+  - [-1, 1, Conv, [128, 3, 2]]                         # 15
+  - [[-1, 11], 1, Concat, [1]] # cat head P4           # 16
+  - [-1, 2, A2C2f, [256, False, -1]]                   # 17
+
+  - [-1, 1, Conv, [256, 3, 2]]                         # 18
+  - [[-1, 8], 1, Concat, [1]] # cat head P5            # 19
+  - [-1, 2, C3k2, [512, True]]                         # 20
+
+  - [[14, 17, 20], 1, Detect, [nc]]                    # Detect(P3, P4, P5)

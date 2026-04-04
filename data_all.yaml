@@ -1,0 +1,11 @@
+# Dataset config for Data All - YOLOv26 Triple Input + DINOv3
+path: C:/Users/USER/Desktop/Triple-dino-yolov26/Data All
+
+train: images/primary/train
+val: images/primary/val
+test: images/primary/test
+
+triple_input: true
+
+nc: 1
+names: ['Cavity']
