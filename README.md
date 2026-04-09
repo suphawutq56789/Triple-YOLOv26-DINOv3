@@ -128,8 +128,8 @@ MedSAM: `wanglab/medsam-vit-base` (ViT-B, dim=768, patch16, trained on 1.5M medi
 ## Installation
 
 ```bash
-git clone https://github.com/suphawutq56789/Triple-YOLOv26-DINOv3-.git
-cd Triple-YOLOv26-DINOv3-
+git clone https://github.com/suphawutq56789/Triple-YOLOv26.git
+cd Triple-YOLOv26
 
 pip install torch torchvision ultralytics transformers timm huggingface_hub
 ```
@@ -318,7 +318,7 @@ def preprocess_gpr_bscan(img: np.ndarray) -> np.ndarray:
 ## Repository Structure
 
 ```
-Triple-YOLOv26-DINOv3/
+Triple-YOLOv26/
 |-- ultralytics/
 |   |-- cfg/models/v26/
 |   |   |-- yolov26_gpr.yaml              <- DINOv3 architecture
@@ -344,7 +344,7 @@ Triple-YOLOv26-DINOv3/
   author    = {KMUTT Civil Engineering Research Group},
   year      = {2025},
   publisher = {GitHub},
-  url       = {https://github.com/suphawutq56789/Triple-YOLOv26-DINOv3-}
+  url       = {https://github.com/suphawutq56789/Triple-YOLOv26}
 }
 ```
 
