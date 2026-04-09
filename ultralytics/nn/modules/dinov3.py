@@ -1474,6 +1474,20 @@ class MedSAMFPN(nn.Module):
             h = blocks[idx].register_forward_hook(_make_hook(scale))
             self._hooks.append(h)
 
+    def __getstate__(self):
+        """Remove unpicklable hooks before serialization."""
+        for h in self._hooks:
+            h.remove()
+        state = self.__dict__.copy()
+        state["_hooks"] = []
+        return state
+
+    def __setstate__(self, state):
+        """Restore state and re-register hooks after deserialization."""
+        self.__dict__.update(state)
+        self._hooks = []
+        self._register_hooks()
+
     # ------------------------------------------------------------------
     @staticmethod
     def _to_spatial(t: torch.Tensor, B: int) -> torch.Tensor:
