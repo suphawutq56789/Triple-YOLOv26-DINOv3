@@ -136,6 +136,63 @@ pip install torch torchvision ultralytics transformers timm huggingface_hub
 
 ---
 
+## Dataset Structure
+
+### Folder Layout
+
+```
+Data All/
+├── images/
+│   ├── primary/          ← Orientation 1  (ต้องมี label)
+│   │   ├── train/
+│   │   │   ├── img001.jpg
+│   │   │   └── ...
+│   │   ├── val/
+│   │   └── test/
+│   ├── detail1/          ← Orientation 2  (ไม่ต้อง label)
+│   │   ├── train/
+│   │   │   ├── img001.jpg   ← ชื่อไฟล์ต้องตรงกับ primary ทุกไฟล์
+│   │   │   └── ...
+│   │   ├── val/
+│   │   └── test/
+│   └── detail2/          ← Orientation 3  (ไม่ต้อง label)
+│       ├── train/
+│       │   ├── img001.jpg   ← ชื่อไฟล์ต้องตรงกับ primary ทุกไฟล์
+│       │   └── ...
+│       ├── val/
+│       └── test/
+└── labels/
+    └── primary/          ← Label อยู่ที่นี่เท่านั้น
+        ├── train/
+        │   ├── img001.txt   ← YOLO format  (class cx cy w h)
+        │   └── ...
+        ├── val/
+        └── test/
+```
+
+### Label Rule
+
+| Folder | ต้อง Label? | เหตุผล |
+|--------|------------|--------|
+| `primary/` | **ต้อง** | Reference orientation — dataset โหลด label จากที่นี่เท่านั้น |
+| `detail1/` | **ไม่ต้อง** | Stack เข้า channel 4-6 อัตโนมัติ ใช้ label เดียวกับ primary |
+| `detail2/` | **ไม่ต้อง** | Stack เข้า channel 7-9 อัตโนมัติ ใช้ label เดียวกับ primary |
+
+### How Triple Input Works
+
+```
+primary/img001.jpg   (3ch)  ─┐
+detail1/img001.jpg   (3ch)  ─┼─ stack → 9-channel input → YOLOv26-GPR
+detail2/img001.jpg   (3ch)  ─┘
+
+label: labels/primary/img001.txt  (bounding box ใช้ coordinate ของ primary)
+```
+
+> **ข้อสำคัญ:** ชื่อไฟล์ใน `detail1/` และ `detail2/` ต้องตรงกับ `primary/` ทุกตัว
+> หากไฟล์ไม่พบ dataset จะแทนด้วย zero tensor อัตโนมัติ (ไม่ crash)
+
+---
+
 ## Training
 
 ### Data config (`data_all.yaml`)
