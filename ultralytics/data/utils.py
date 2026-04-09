@@ -44,7 +44,21 @@ FORMATS_HELP_MSG = f"Supported formats are:\nimages: {IMG_FORMATS}\nvideos: {VID
 def img2label_paths(img_paths):
     """Define label paths as a function of image paths."""
     sa, sb = f"{os.sep}images{os.sep}", f"{os.sep}labels{os.sep}"  # /images/, /labels/ substrings
-    return [sb.join(x.rsplit(sa, 1)).rsplit(".", 1)[0] + ".txt" for x in img_paths]
+    label_paths = [sb.join(x.rsplit(sa, 1)).rsplit(".", 1)[0] + ".txt" for x in img_paths]
+    # Fallback: if label not found, try path without intermediate subdirectory (e.g. labels/primary/train -> labels/train)
+    result = []
+    for lp in label_paths:
+        if not os.path.exists(lp):
+            parts = lp.split(os.sep)
+            try:
+                li = parts.index("labels")
+                alt = os.sep.join(parts[:li + 1] + parts[li + 2:])
+                if os.path.exists(alt):
+                    lp = alt
+            except ValueError:
+                pass
+        result.append(lp)
+    return result
 
 
 def get_hash(paths):
