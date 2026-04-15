@@ -24,7 +24,7 @@ from ultralytics import YOLO
 warnings.filterwarnings("ignore")
 
 DATA_CONFIG   = "data_all.yaml"
-DEFAULT_BEST  = "C:/Users/USER/Downloads/best (1).pt"
+DEFAULT_BEST  = "runs/best (1).pt"
 
 
 def partial_unfreeze_dinov3(model, n_unfreeze: int = 3):
