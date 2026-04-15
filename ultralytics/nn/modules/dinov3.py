@@ -1062,9 +1062,16 @@ class DINOv3FPN(nn.Module):
                 "facebook/dinov3-vitg16-pretrain-sat493m":  "vit_giant_patch14_dinov2.lvd142m",
             }
             name = _map.get(self.model_name, "vit_small_patch14_dinov2.lvd142m")
-            m = timm.create_model(name, pretrained=True, num_classes=0, global_pool="")
+            m = timm.create_model(name, pretrained=True, num_classes=0, global_pool="",
+                                  dynamic_img_size=True)
             self.use_timm = True
-            print(f"✓ DINOv3FPN loaded (timm): {name}")
+            # Sync self.image_size to what timm actually uses (e.g. 518 for dinov2)
+            pe = getattr(m, "patch_embed", None)
+            if pe is not None:
+                actual = getattr(pe, "img_size", None)
+                if actual is not None:
+                    self.image_size = actual[0] if isinstance(actual, (list, tuple)) else int(actual)
+            print(f"✓ DINOv3FPN loaded (timm): {name} @ img_size={self.image_size}")
             return m
 
         raise RuntimeError(

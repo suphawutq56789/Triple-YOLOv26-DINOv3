@@ -1,6 +1,14 @@
 # Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
 
 import contextlib
+
+# Module-level scale override — set via set_model_scale() before YOLO(yaml)
+_model_scale_override: str | None = None
+
+def set_model_scale(scale: str | None) -> None:
+    """Set a default scale used by parse_model when the YAML has no 'scale' key."""
+    global _model_scale_override
+    _model_scale_override = scale
 import pickle
 import re
 import types
@@ -952,7 +960,7 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
     nc, act, scales = (d.get(x) for x in ("nc", "activation", "scales"))
     depth, width, kpt_shape = (d.get(x, 1.0) for x in ("depth_multiple", "width_multiple", "kpt_shape"))
     if scales:
-        scale = d.get("scale")
+        scale = d.get("scale") or _model_scale_override
         if not scale:
             scale = tuple(scales.keys())[0]
             LOGGER.warning(f"WARNING ⚠️ no model scale passed. Assuming scale='{scale}'.")
