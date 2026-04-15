@@ -230,13 +230,17 @@ class DINOv3Backbone(nn.Module):
             self.dino_model = timm.create_model(
                 timm_name,
                 pretrained=self.pretrained,
-                num_classes=0,          # Remove classification head
-                global_pool="",         # Remove global pooling
-                img_size=self.image_size,
-                dynamic_img_size=True,  # Accept any input size
+                num_classes=0,   # Remove classification head
+                global_pool="",  # Remove global pooling
             )
-            
-            print(f"✓ Successfully loaded DINOv3 from timm: {timm_name}")
+
+            # Sync image_size to what timm actually loaded (may differ from requested)
+            pe = getattr(self.dino_model, "patch_embed", None)
+            if pe is not None and hasattr(pe, "img_size"):
+                actual = pe.img_size
+                self.image_size = actual[0] if isinstance(actual, (list, tuple)) else int(actual)
+
+            print(f"✓ DINOv3FPN loaded (timm): {timm_name} @ img_size={self.image_size}")
             
         except Exception as e:
             print(f"Failed to load from timm: {e}")
