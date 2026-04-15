@@ -37,24 +37,40 @@ import argparse
 import warnings
 from pathlib import Path
 
+import yaml as _yaml
 from ultralytics import YOLO
 
 warnings.filterwarnings("ignore")
 
+# Depth, width, max_channels for each scale
+_SCALES = {
+    "n": [0.50, 0.25, 1024],
+    "s": [0.50, 0.50, 1024],
+    "m": [0.50, 1.00,  512],
+    "l": [1.00, 1.00,  512],
+    "x": [1.50, 1.00,  512],
+}
+
 
 def load_model_with_scale(config_path: str, scale: str) -> YOLO:
-    """Load YOLO model config with the specified scale injected.
+    """Load YOLO model config with the specified scale.
 
-    Writes a persistent sibling file (e.g. _scale_m.yaml) so the
-    trainer can reload it throughout training without a deleted tempfile.
+    Replaces the 'scales' dict with a single entry so ultralytics'
+    fallback always selects the correct depth/width/max_channels.
     """
     cfg_path = Path(config_path)
     out_path = cfg_path.parent / f"_scale_{scale}.yaml"
+
     with open(config_path, "r") as f:
-        original = f.read()
-    # Prepend 'scale: <x>' so it takes priority over any existing key
+        cfg = _yaml.safe_load(f)
+
+    # Keep only the target scale so tuple(scales.keys())[0] picks it
+    cfg["scales"] = {"n": _SCALES[scale]}
+    cfg.pop("scale", None)   # remove any leftover scale key
+
     with open(out_path, "w") as f:
-        f.write(f"scale: {scale}\n" + original)
+        _yaml.dump(cfg, f, default_flow_style=False, sort_keys=False)
+
     return YOLO(str(out_path))
 
 DATA_CONFIG       = "data_all.yaml"
