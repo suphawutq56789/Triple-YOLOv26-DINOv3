@@ -1102,19 +1102,25 @@ class DINOv3FPN(nn.Module):
 
         with torch.set_grad_enabled(not self.freeze):
             if not self.use_timm:
-                # HuggingFace path: output_hidden_states=True
+                # HuggingFace path
                 out = self.dino_model(x, output_hidden_states=True)
-                hs = out.hidden_states   # tuple([B, 1+N, D]) including CLS
-                n = len(hs)
-                # clamp indices to valid range — some HF models return fewer
-                # hidden states than expected (e.g. n=1 for custom DINOv3)
-                p3_idx = min(max(1, n // 3), n - 1)
-                p4_idx = min(max(1, 2 * n // 3), n - 1)
-                layers = {
-                    "p3": hs[p3_idx][:, 1:, :],          # early
-                    "p4": hs[p4_idx][:, 1:, :],          # mid
-                    "p5": hs[-1][:, 1:, :],               # final
-                }
+                hs = out.hidden_states  # tuple of [B, 1+N, D] or None/empty
+                n = len(hs) if hs else 0
+                if n >= 2:
+                    # normal path: pick P3/P4/P5 from different depths
+                    p3_idx = min(max(0, n // 3), n - 1)
+                    p4_idx = min(max(0, 2 * n // 3), n - 1)
+                    layers = {
+                        "p3": hs[p3_idx][:, 1:, :],
+                        "p4": hs[p4_idx][:, 1:, :],
+                        "p5": hs[-1][:, 1:, :],
+                    }
+                else:
+                    # fallback: model doesn't expose intermediate hidden states
+                    # use last_hidden_state for all three scales
+                    t = out.last_hidden_state  # [B, 1+N, D]
+                    t = t[:, 1:, :]            # remove CLS token
+                    layers = {"p3": t, "p4": t, "p5": t}
             else:
                 # timm path
                 if hasattr(self.dino_model, "get_intermediate_layers"):
