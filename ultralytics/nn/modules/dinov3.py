@@ -1106,10 +1106,14 @@ class DINOv3FPN(nn.Module):
                 out = self.dino_model(x, output_hidden_states=True)
                 hs = out.hidden_states   # tuple([B, 1+N, D]) including CLS
                 n = len(hs)
+                # clamp indices to valid range — some HF models return fewer
+                # hidden states than expected (e.g. n=1 for custom DINOv3)
+                p3_idx = min(max(1, n // 3), n - 1)
+                p4_idx = min(max(1, 2 * n // 3), n - 1)
                 layers = {
-                    "p3": hs[max(1, n // 3)][:, 1:, :],          # early
-                    "p4": hs[max(1, 2 * n // 3)][:, 1:, :],      # mid
-                    "p5": hs[-1][:, 1:, :],                       # final
+                    "p3": hs[p3_idx][:, 1:, :],          # early
+                    "p4": hs[p4_idx][:, 1:, :],          # mid
+                    "p5": hs[-1][:, 1:, :],               # final
                 }
             else:
                 # timm path
