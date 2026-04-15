@@ -230,9 +230,10 @@ class DINOv3Backbone(nn.Module):
             self.dino_model = timm.create_model(
                 timm_name,
                 pretrained=self.pretrained,
-                num_classes=0,     # Remove classification head
-                global_pool="",    # Remove global pooling
-                img_size=self.image_size  # Match our input size
+                num_classes=0,          # Remove classification head
+                global_pool="",         # Remove global pooling
+                img_size=self.image_size,
+                dynamic_img_size=True,  # Accept any input size
             )
             
             print(f"✓ Successfully loaded DINOv3 from timm: {timm_name}")
