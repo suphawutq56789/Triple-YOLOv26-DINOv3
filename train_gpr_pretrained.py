@@ -136,7 +136,7 @@ def main():
     parser.add_argument("--batch",  type=int, default=6)
     parser.add_argument("--imgsz",  type=int, default=640)
     parser.add_argument("--data",   default=DATA_CONFIG)
-    parser.add_argument("--pretrained", default=PRETRAINED,
+    parser.add_argument("--pretrained", default=None,
                         help="Path or hub name for yolo26s weights")
     args = parser.parse_args()
 
