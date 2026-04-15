@@ -145,7 +145,12 @@ def main():
     parser.add_argument("--phase2",   action="store_true",   help="Run phase 2 after phase 1")
     parser.add_argument("--weights",  default=None,
                         help="Start phase 2 from existing weights (skip phase 1)")
+    parser.add_argument("--data",     default=None,          help="Dataset yaml path")
     args = parser.parse_args()
+
+    if args.data:
+        global DATA_CONFIG
+        DATA_CONFIG = args.data
 
     if args.weights:
         # Jump straight to phase 2
