@@ -149,18 +149,19 @@ def phase1(scale: str, epochs: int, batch: int, imgsz: int, name_suffix: str = "
         # Optimizer — AdamW works well for small datasets
         optimizer="AdamW",
         lr0=0.002,
-        lrf=0.01,
-        weight_decay=0.01,
+        lrf=0.001,           # gentler LR decay → refine longer near end
+        weight_decay=0.05,   # stronger regularization for small dataset
         warmup_epochs=5,
 
         # Loss weights (single class: emphasise box quality)
-        box=7.5,
+        box=8.0,
         cls=0.5,
         dfl=1.5,
 
         # GPR-safe augmentation
         **GPR_AUG,
         mosaic=1.0,
+        close_mosaic=30,     # disable mosaic last 30 epochs for cleaner train
         copy_paste=0.5,      # paste extra void patches — helps rare class
         mixup=0.1,           # blend pairs → regularize, reduce overfit
 
@@ -170,7 +171,7 @@ def phase1(scale: str, epochs: int, batch: int, imgsz: int, name_suffix: str = "
         exist_ok=True,
         plots=True,
         save_period=20,
-        patience=30,
+        patience=60,
         verbose=True,
     )
 
@@ -228,17 +229,18 @@ def phase2(weights: str, epochs: int, batch: int, imgsz: int, scale: str,
         # 10x lower LR — prevents catastrophic forgetting of medical features
         optimizer="AdamW",
         lr0=0.0002,
-        lrf=0.01,
-        weight_decay=0.005,
+        lrf=0.001,
+        weight_decay=0.01,
         warmup_epochs=3,
 
-        box=7.5,
+        box=8.0,
         cls=0.5,
         dfl=1.5,
 
         # Lighter augmentation in phase 2
         **GPR_AUG,
         mosaic=0.5,
+        close_mosaic=10,
         copy_paste=0.1,
 
         project=PROJECT,
@@ -246,7 +248,7 @@ def phase2(weights: str, epochs: int, batch: int, imgsz: int, scale: str,
         exist_ok=True,
         plots=True,
         save_period=10,
-        patience=20,
+        patience=30,
         verbose=True,
     )
 
@@ -309,16 +311,17 @@ def train_unified(scale: str, epochs: int, batch: int, imgsz: int,
 
         optimizer="AdamW",
         lr0=0.002,
-        lrf=0.01,
-        weight_decay=0.01,
+        lrf=0.001,
+        weight_decay=0.05,
         warmup_epochs=5,
 
-        box=7.5,
+        box=8.0,
         cls=0.5,
         dfl=1.5,
 
         **GPR_AUG,
         mosaic=1.0,
+        close_mosaic=30,
         copy_paste=0.5,
         mixup=0.1,
 
@@ -327,7 +330,7 @@ def train_unified(scale: str, epochs: int, batch: int, imgsz: int,
         exist_ok=True,
         plots=True,
         save_period=20,
-        patience=40,
+        patience=60,
         verbose=True,
     )
 
