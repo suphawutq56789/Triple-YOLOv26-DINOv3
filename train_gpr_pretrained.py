@@ -41,7 +41,12 @@ def load_pretrained_backbone(our_model, pretrained_path: str) -> int:
     Returns number of matched layers.
     """
     print(f"\nLoading pretrained backbone from: {pretrained_path}")
-    pretrained_sd = YOLO(pretrained_path).model.state_dict()
+    try:
+        pretrained_sd = YOLO(pretrained_path).model.state_dict()
+    except FileNotFoundError:
+        fallback = "yolo26s.pt"
+        print(f"  ⚠️  {pretrained_path} not found — falling back to {fallback}")
+        pretrained_sd = YOLO(fallback).model.state_dict()
 
     our_sd = our_model.state_dict()
     matched, skipped = {}, []
