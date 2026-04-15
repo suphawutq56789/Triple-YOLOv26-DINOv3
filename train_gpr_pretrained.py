@@ -24,7 +24,14 @@ warnings.filterwarnings("ignore")
 
 DATA_CONFIG  = "data_all.yaml"
 MODEL_CONFIG = "ultralytics/cfg/models/v26/yolov26_gpr.yaml"
-PRETRAINED   = "yolo26s.pt"   # auto-downloaded from ultralytics hub if not found
+# auto-map scale → pretrained .pt (override with --pretrained if needed)
+PRETRAINED_MAP = {
+    "n": "yolo26n.pt",
+    "s": "yolo26s.pt",
+    "m": "yolo26m.pt",
+    "l": "yolo26l.pt",
+    "x": "yolo26x.pt",
+}
 
 
 def load_pretrained_backbone(our_model, pretrained_path: str) -> int:
@@ -58,7 +65,7 @@ def load_pretrained_backbone(our_model, pretrained_path: str) -> int:
     return n_matched
 
 
-def train(scale: str, epochs: int, batch: int, imgsz: int, data: str, pretrained: str = PRETRAINED):
+def train(scale: str, epochs: int, batch: int, imgsz: int, data: str, pretrained: str = None):
     print("=" * 60)
     print(f"scale={scale}  epochs={epochs}  batch={batch}  imgsz={imgsz}")
     print("YOLOv26s pretrained + DINOv3 frozen — training CNN + CrossFusion")
@@ -68,8 +75,9 @@ def train(scale: str, epochs: int, batch: int, imgsz: int, data: str, pretrained
     set_model_scale(scale)
     model = YOLO(MODEL_CONFIG)
 
-    # 2. Partial-load yolo26s pretrained backbone
-    load_pretrained_backbone(model.model, pretrained)
+    # 2. Partial-load pretrained backbone (auto-select by scale if not specified)
+    pt = pretrained or PRETRAINED_MAP.get(scale, "yolo26s.pt")
+    load_pretrained_backbone(model.model, pt)
 
     # 3. Train
     model.train(
@@ -127,9 +135,7 @@ def main():
                         help="Path or hub name for yolo26s weights")
     args = parser.parse_args()
 
-    pretrained = args.pretrained
-
-    train(args.scale, args.epochs, args.batch, args.imgsz, args.data, pretrained)
+    train(args.scale, args.epochs, args.batch, args.imgsz, args.data, args.pretrained)
 
 
 if __name__ == "__main__":
